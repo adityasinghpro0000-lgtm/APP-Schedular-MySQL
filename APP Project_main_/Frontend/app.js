@@ -378,13 +378,15 @@ function calcMetrics(pcbs) {
   if (!done.length) return null;
   const totalBurst = pcbs.reduce((s, p) => s + p.burst, 0);
   const makespan   = Math.max(...done.map(p => p.completionTime));
+  const workloadStart = Math.min(...pcbs.map(p => p.arrival));
+  const workloadDuration = makespan - workloadStart;
   return {
     avgWT:        done.reduce((s, p) => s + p.waitingTime,    0) / done.length,
     avgTAT:       done.reduce((s, p) => s + p.turnaroundTime, 0) / done.length,
     avgRT:        done.reduce((s, p) => s + (p.responseTime ?? 0), 0) / done.length,
     avgJobWT:     done.reduce((s, p) => s + Math.max(0, (p.admittedAt ?? p.arrival) - (p.submittedAt ?? p.arrival)), 0) / done.length,
     avgTotalTAT:  done.reduce((s, p) => s + ((p.completionTime ?? makespan) - (p.submittedAt ?? p.arrival)), 0) / done.length,
-    utilization:  makespan ? (totalBurst / makespan) * 100 : 0,
+    utilization:  workloadDuration > 0 ? (totalBurst / workloadDuration) * 100 : 0,
     throughput:   makespan ? done.length / makespan : 0,
     makespan,
   };
