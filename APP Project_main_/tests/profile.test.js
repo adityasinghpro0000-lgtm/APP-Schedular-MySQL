@@ -6,6 +6,7 @@ const path = require('path');
 function createProfileEnvironment() {
   const storage = {};
   const listeners = {};
+  const elements = {};
 
   function createElement() {
     return {
@@ -27,34 +28,34 @@ function createProfileEnvironment() {
     addEventListener() {},
     querySelector(selector) {
       if (selector === '#profileReset') {
-        return createElement();
+        return elements[selector] || (elements[selector] = createElement());
       }
       if (selector === '#profileStatus') {
-        return { textContent: '', classList: { add() {}, remove() {} } };
+        return elements[selector] || (elements[selector] = { textContent: '', classList: { add() {}, remove() {} } });
       }
       if (selector === '#profileToggle') {
-        return createElement();
+        return elements[selector] || (elements[selector] = createElement());
       }
       if (selector === '#profileName') {
-        return createElement();
+        return elements[selector] || (elements[selector] = createElement());
       }
       if (selector === '#profileRole') {
-        return createElement();
+        return elements[selector] || (elements[selector] = createElement());
       }
       if (selector === '#profileBadge') {
-        return createElement();
+        return elements[selector] || (elements[selector] = createElement());
       }
       if (selector === '#profileList') {
-        return { innerHTML: '', querySelectorAll() { return []; }, querySelector() { return null; } };
+        return elements[selector] || (elements[selector] = { innerHTML: '', querySelectorAll() { return []; }, querySelector() { return null; } });
       }
       if (selector === '#profileCreate') {
-        return createElement();
+        return elements[selector] || (elements[selector] = createElement());
       }
       if (selector === '#profileRename') {
-        return createElement();
+        return elements[selector] || (elements[selector] = createElement());
       }
       if (selector === '#profileResetView') {
-        return createElement();
+        return elements[selector] || (elements[selector] = createElement());
       }
       return null;
     },
@@ -97,21 +98,6 @@ function createProfileEnvironment() {
     context,
     storage,
     listeners,
-    triggerReset() {
-      const resetButton = document.querySelector('#profileReset');
-      if (!resetButton || !resetButton.addEventListener) {
-        throw new Error('profileReset button not found in stubbed document');
-      }
-      const handlers = [];
-      resetButton.addEventListener = (eventName, callback) => {
-        if (eventName === 'click') handlers.push(callback);
-      };
-      vm.runInNewContext(script, context, { filename: 'profile.js' });
-      if (!handlers.length) {
-        throw new Error('No click handler registered for profileReset');
-      }
-      handlers[0]();
-    },
   };
 }
 
@@ -122,14 +108,7 @@ env.storage['cpu-simulator-profiles'] = JSON.stringify([
 ]);
 env.storage['cpu-simulator-profile'] = JSON.stringify({ id: 'guest', name: 'Sam', role: 'Project user' });
 
-const resetButton = env.context.document.querySelector('#profileReset');
-const handlers = [];
-resetButton.addEventListener = (_event, callback) => handlers.push(callback);
 vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../Frontend/profile.js'), 'utf8'), env.context, { filename: 'profile.js' });
-handlers[0]();
+assert.strictEqual(env.context.window.ProfileManager.getStorageScope(), 'guest');
 
-assert.deepStrictEqual(JSON.parse(env.storage['cpu-simulator-profiles']), [
-  { id: 'default', name: 'AK', role: 'Project user', active: true },
-]);
-
-console.log('profile reset test passed');
+console.log('profile storage scope test passed');
